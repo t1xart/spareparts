@@ -31,7 +31,7 @@ class SupplierController extends Controller
             'address' => 'nullable|string', 'city' => 'nullable|string', 'province' => 'nullable|string',
             'bank_name' => 'nullable|string', 'bank_account' => 'nullable|string',
         ]);
-        $data['code'] = 'SUP-' . strtoupper(substr($request->name, 0, 3)) . '-' . str_pad(Supplier::count() + 1, 4, '0', STR_PAD_LEFT);
+        $data['code'] = Supplier::generateCode($request->name);
         return new SupplierResource(Supplier::create($data));
     }
 

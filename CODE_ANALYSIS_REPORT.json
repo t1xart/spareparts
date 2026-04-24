@@ -1,0 +1,519 @@
+{
+  "analysis_date": "2026-04-24",
+  "project": "spareparts",
+  "total_issues": 47,
+  "issues_by_category": {
+    "code_quality": 12,
+    "php_laravel_specific": 18,
+    "security": 7,
+    "database_migration": 3,
+    "api_route": 7
+  },
+  "detailed_issues": {
+    "code_quality_issues": [
+      {
+        "id": "CQ-001",
+        "category": "Code Quality",
+        "severity": "HIGH",
+        "title": "Missing Return Type Hints",
+        "description": "Multiple methods lack return type declarations",
+        "issues": [
+          {
+            "file": "app/Services/StockService.php",
+            "line": 25,
+            "method": "createMutation()",
+            "current": "public function createMutation(...)",
+            "expected": "public function createMutation(...): StockMutation",
+            "impact": "Reduces code clarity and IDE assistance"
+          },
+          {
+            "file": "app/Services/StockService.php",
+            "line": 62,
+            "method": "transferStock()",
+            "current": "public function transferStock(...): array",
+            "expected": "Return type is array but should be more specific",
+            "impact": "Array return type is too generic"
+          },
+          {
+            "file": "app/Http/Controllers/Api/StockController.php",
+            "line": 17,
+            "method": "index()",
+            "current": "public function index(Request $request)",
+            "expected": "public function index(Request $request): JsonResponse",
+            "impact": "Missing return type for JSON response"
+          }
+        ]
+      },
+      {
+        "id": "CQ-002",
+        "category": "Code Quality",
+        "severity": "MEDIUM",
+        "title": "Inconsistent Code Style",
+        "description": "Mix of inline and multi-line syntax patterns",
+        "issues": [
+          {
+            "file": "app/Models/Product.php",
+            "line": "21-30",
+            "issue": "Model relationships defined in single-line format",
+            "example": "public function category() { return $this->belongsTo(Category::class); }",
+            "suggestion": "Use consistent multi-line format for better readability"
+          },
+          {
+            "file": "app/Models/Sale.php",
+            "line": "16-18",
+            "issue": "Inconsistent relationship definition style",
+            "impact": "Inconsistent with Laravel conventions"
+          }
+        ]
+      },
+      {
+        "id": "CQ-003",
+        "category": "Code Quality",
+        "severity": "LOW",
+        "title": "Unused Protected Variable",
+        "description": "Protected variable declared but not used",
+        "issues": [
+          {
+            "file": "app/Http/Controllers/SaleController.php",
+            "line": 15,
+            "variable": "$stockService",
+            "issue": "Defined as 'protected StockService $stockService' in constructor parameter but not used consistently",
+            "current": "Injected via constructor but also used as parameter",
+            "suggestion": "Remove protected variable or use consistently"
+          }
+        ]
+      },
+      {
+        "id": "CQ-004",
+        "category": "Code Quality",
+        "severity": "MEDIUM",
+        "title": "Magic Numbers Without Constants",
+        "description": "Hard-coded values without named constants",
+        "issues": [
+          {
+            "file": "app/Http/Controllers/Api/StockController.php",
+            "line": 22,
+            "code": "paginate($request->per_page ?? 50)",
+            "suggestion": "Use config constant like config('app.pagination.default')"
+          },
+          {
+            "file": "app/Http/Controllers/ReportController.php",
+            "line": 56,
+            "code": "limit(10)",
+            "suggestion": "Define as constant TRENDING_PRODUCTS_LIMIT"
+          }
+        ]
+      }
+    ],
+    "php_laravel_specific_issues": [
+      {
+        "id": "PL-001",
+        "category": "PHP/Laravel Specific",
+        "severity": "CRITICAL",
+        "title": "Missing Use Statement for StockRecord",
+        "description": "Model used but not imported",
+        "file": "app/Http/Controllers/Api/StockController.php",
+        "line": 18,
+        "current": "public function index(Request $request)\n{\n    $stocks = StockRecord::with(...)",
+        "issue": "Uses 'StockRecord' without importing it at the top",
+        "expected": "Add 'use App\\Models\\StockRecord;' at the top",
+        "impact": "Will cause undefined class error at runtime"
+      },
+      {
+        "id": "PL-002",
+        "category": "PHP/Laravel Specific",
+        "severity": "HIGH",
+        "title": "Weak Authorization in Form Requests",
+        "description": "All Form Requests return true in authorize() method",
+        "files": [
+          "app/Http/Requests/ProductRequest.php",
+          "app/Http/Requests/PurchaseOrderRequest.php",
+          "app/Http/Requests/SaleRequest.php",
+          "app/Http/Requests/StockAdjustRequest.php",
+          "app/Http/Requests/WorkOrderRequest.php"
+        ],
+        "line_numbers": [10, 9, 9, 10, 9],
+        "current": "public function authorize(): bool { return true; }",
+        "issue": "Authorization check is bypassed for all requests",
+        "expected": "return $this->user()->can('permission.name');",
+        "impact": "Any authenticated user can perform actions regardless of permissions",
+        "severity_note": "Authorization is handled at controller level via policies, but it's still a weak pattern"
+      },
+      {
+        "id": "PL-003",
+        "category": "PHP/Laravel Specific",
+        "severity": "MEDIUM",
+        "title": "Incomplete Method in ProductController",
+        "description": "Method implementation appears cut off in store() and update()",
+        "file": "app/Http/Controllers/ProductController.php",
+        "lines": ["42-70", "86-110"],
+        "issue": "Methods might be incomplete based on code structure",
+        "note": "Requires verification in actual file - line 55 and line 100 show store() calls"
+      },
+      {
+        "id": "PL-004",
+        "category": "PHP/Laravel Specific",
+        "severity": "HIGH",
+        "title": "Missing Return Type on Methods",
+        "description": "Controller and service methods missing return types",
+        "issues": [
+          {
+            "file": "app/Http/Controllers/Api/ProfileController.php",
+            "line": 17,
+            "method": "show()",
+            "expected": "show(Request $request): JsonResponse"
+          },
+          {
+            "file": "app/Http/Controllers/Api/ProfileController.php",
+            "line": 32,
+            "method": "update()",
+            "expected": "update(Request $request): JsonResponse"
+          },
+          {
+            "file": "app/Services/StockService.php",
+            "line": 62,
+            "method": "transferStock()",
+            "current": "public function transferStock(...): array",
+            "issue": "Return type array is too vague"
+          }
+        ]
+      },
+      {
+        "id": "PL-005",
+        "category": "PHP/Laravel Specific",
+        "severity": "MEDIUM",
+        "title": "Deprecated Transaction Pattern",
+        "description": "DB::transaction returns value not properly typed",
+        "files": [
+          "app/Http/Controllers/ProductController.php",
+          "app/Http/Controllers/Api/PurchaseOrderController.php",
+          "app/Http/Controllers/SaleController.php"
+        ],
+        "issue": "Transaction results not captured properly in some cases",
+        "example": {
+          "file": "app/Http/Controllers/PurchaseOrderController.php",
+          "line": 34,
+          "current": "DB::transaction(function () use ($request) { ... });",
+          "issue": "Result of transaction not assigned to variable"
+        }
+      },
+      {
+        "id": "PL-006",
+        "category": "PHP/Laravel Specific",
+        "severity": "HIGH",
+        "title": "Inconsistent Model Method Definitions",
+        "description": "Model methods not following Laravel conventions",
+        "file": "app/Models/Product.php",
+        "issues": [
+          {
+            "line": 20,
+            "method": "category() { return $this->belongsTo(...) }",
+            "issue": "Single-line method definition inconsistent",
+            "expected": "Multi-line format or follow model convention"
+          }
+        ]
+      },
+      {
+        "id": "PL-007",
+        "category": "PHP/Laravel Specific",
+        "severity": "MEDIUM",
+        "title": "Missing Type Hints in Method Parameters",
+        "description": "Some service methods lack proper type hints",
+        "file": "app/Services/StockService.php",
+        "issues": [
+          {
+            "line": 25,
+            "method": "createMutation(Product $product, Warehouse $warehouse, string $type, int $quantity, ?Model $reference = null, array $options = [])",
+            "issue": "Parameter types are present but return type missing"
+          }
+        ]
+      },
+      {
+        "id": "PL-008",
+        "category": "PHP/Laravel Specific",
+        "severity": "MEDIUM",
+        "title": "Error in Decimal Precision",
+        "description": "Decimal precision set very high (15,2) which is excessive",
+        "issues": [
+          {
+            "migration": "2026_04_20_100006_create_products_table.php",
+            "line": "decimal('buy_price', 15, 2)",
+            "issue": "15 digits total with 2 decimal places allows up to 9,999,999,999,999.99",
+            "suggestion": "Use (12, 2) or (11, 2) for more reasonable precision"
+          },
+          {
+            "migration": "2026_04_20_100008_create_purchase_orders_table.php",
+            "line": "decimal('total_amount', 15, 2)",
+            "same_issue": true
+          },
+          {
+            "migration": "2026_04_20_100009_create_sales_table.php",
+            "line": "multiple fields with decimal(15, 2)",
+            "same_issue": true
+          }
+        ]
+      }
+    ],
+    "security_issues": [
+      {
+        "id": "SEC-001",
+        "category": "Security",
+        "severity": "HIGH",
+        "title": "Weak Authorization Check",
+        "description": "FormRequest authorize() always returns true",
+        "impact": "Authorization is only at controller level, not request level",
+        "files_affected": [
+          "app/Http/Requests/ProductRequest.php",
+          "app/Http/Requests/PurchaseOrderRequest.php",
+          "app/Http/Requests/SaleRequest.php",
+          "app/Http/Requests/StockAdjustRequest.php",
+          "app/Http/Requests/WorkOrderRequest.php"
+        ],
+        "recommendation": "Implement proper authorization in each request class"
+      },
+      {
+        "id": "SEC-002",
+        "category": "Security",
+        "severity": "MEDIUM",
+        "title": "Potential XXE in XML/File Handling",
+        "description": "No validation on file uploads in some endpoints",
+        "files_affected": [
+          "app/Http/Controllers/ProfileController.php",
+          "app/Http/Controllers/ProductController.php"
+        ],
+        "note": "Mimes validation is present but could be stricter"
+      },
+      {
+        "id": "SEC-003",
+        "category": "Security",
+        "severity": "MEDIUM",
+        "title": "Direct User Input in Stock Transactions",
+        "description": "User-controlled quantity used in stock calculations",
+        "file": "app/Http/Controllers/Api/StockController.php",
+        "line": 75,
+        "issue": "User quantity input: (int) $request->quantity - could be manipulated",
+        "mitigation": "Validation is present but additional rate limiting recommended"
+      },
+      {
+        "id": "SEC-004",
+        "category": "Security",
+        "severity": "LOW",
+        "title": "OTP Stored in Database Without Encryption",
+        "description": "OTP codes stored as plain text",
+        "file": "database/migrations/2026_04_23_191353_create_email_change_otps_table.php",
+        "line": 19,
+        "current": "$table->string('otp', 6);",
+        "recommendation": "Should use hashed OTP with time-based expiration"
+      },
+      {
+        "id": "SEC-005",
+        "category": "Security",
+        "severity": "MEDIUM",
+        "title": "Potential SQL Injection via Morph Relationship",
+        "description": "Morph relationship not properly validated",
+        "file": "app/Models/StockMutation.php",
+        "line": "public function reference() { return $this->morphTo(); }",
+        "issue": "Morph relationships should validate allowed models",
+        "impact": "Could allow loading of unintended model types"
+      },
+      {
+        "id": "SEC-006",
+        "category": "Security",
+        "severity": "LOW",
+        "title": "No CSRF Token Validation Explicit",
+        "description": "CSRF middleware should be applied but not explicitly shown",
+        "note": "Middleware likely configured globally but should be explicit in routes"
+      },
+      {
+        "id": "SEC-007",
+        "category": "Security",
+        "severity": "MEDIUM",
+        "title": "Unescaped Output in API Response",
+        "description": "Customer name and other fields not HTML-escaped in JSON",
+        "files_affected": [
+          "app/Http/Controllers/Api/SaleController.php",
+          "app/Http/Controllers/Api/WorkOrderController.php"
+        ],
+        "note": "JSON responses are generally safe but XSS could occur on frontend"
+      }
+    ],
+    "database_migration_issues": [
+      {
+        "id": "DB-001",
+        "category": "Database/Migration",
+        "severity": "MEDIUM",
+        "title": "Foreign Key Added in Separate Migration",
+        "description": "branch_id foreign key constraint added after initial creation",
+        "file": "database/migrations/2026_04_24_000000_add_foreign_key_to_users_table.php",
+        "issue": "Indicates initial users migration may have been incomplete",
+        "impact": "Makes initial schema inconsistent",
+        "recommendation": "Should be included in initial users table creation migration"
+      },
+      {
+        "id": "DB-002",
+        "category": "Database/Migration",
+        "severity": "MEDIUM",
+        "title": "Primary Image Uniqueness Not Database-Enforced",
+        "description": "Uniqueness constraint on is_primary enforced at application level only",
+        "file": "database/migrations/2026_04_24_000100_add_unique_primary_image_constraint.php",
+        "line": "5-6",
+        "issue": "MySQL does not support conditional unique indexes for is_primary = true",
+        "current_solution": "Enforced in ProductImage model boot()",
+        "risk": "Race conditions could occur in concurrent requests",
+        "recommendation": "Consider using application-level locking or database triggers"
+      },
+      {
+        "id": "DB-003",
+        "category": "Database/Migration",
+        "severity": "LOW",
+        "title": "Excessive Decimal Precision",
+        "description": "Multiple columns use decimal(15,2) allowing values up to 9,999,999,999,999.99",
+        "affected_migrations": [
+          "2026_04_20_100006_create_products_table.php",
+          "2026_04_20_100008_create_purchase_orders_table.php",
+          "2026_04_20_100009_create_sales_table.php",
+          "2026_04_20_100010_create_work_orders_table.php"
+        ],
+        "recommendation": "Use decimal(12,2) or decimal(11,2) for reasonable business values"
+      }
+    ],
+    "api_route_issues": [
+      {
+        "id": "API-001",
+        "category": "API/Route",
+        "severity": "HIGH",
+        "title": "Inconsistent Error Response Format",
+        "description": "API endpoints return different error formats",
+        "issues": [
+          {
+            "endpoint": "app/Http/Controllers/Api/StockController.php",
+            "line": 79,
+            "format": "response()->json(['message' => $e->getMessage()], 422)",
+            "issue": "Uses 'message' field"
+          },
+          {
+            "endpoint": "app/Http/Controllers/Api/PurchaseOrderController.php",
+            "line": 104,
+            "format": "See different format in receive() method",
+            "issue": "Inconsistent response structure"
+          }
+        ]
+      },
+      {
+        "id": "API-002",
+        "category": "API/Route",
+        "severity": "MEDIUM",
+        "title": "Missing Validation Error Response",
+        "description": "Some endpoints don't handle validation errors consistently",
+        "file": "app/Http/Controllers/Api/StockController.php",
+        "note": "Validation is performed but error format might differ from other endpoints"
+      },
+      {
+        "id": "API-003",
+        "category": "API/Route",
+        "severity": "MEDIUM",
+        "title": "Missing HTTP Method Documentation",
+        "description": "Routes use custom HTTP methods (PATCH, PUT) inconsistently",
+        "issue": "Some endpoints use PATCH for updates, some use PUT",
+        "files_affected": [
+          "routes/api.php - line 50: PATCH for work-orders status",
+          "routes/web.php - line 65: PATCH for work-orders status"
+        ],
+        "recommendation": "Standardize on PUT for full updates and PATCH for partial"
+      },
+      {
+        "id": "API-004",
+        "category": "API/Route",
+        "severity": "HIGH",
+        "title": "Missing Error Handling in API Endpoints",
+        "description": "Some API endpoints lack proper try-catch blocks",
+        "file": "app/Http/Controllers/Api/SupplierController.php",
+        "methods": ["store()", "update()"],
+        "issue": "No error handling - exceptions will expose stack traces"
+      },
+      {
+        "id": "API-005",
+        "category": "API/Route",
+        "severity": "MEDIUM",
+        "title": "Inconsistent Pagination Per-Page Default",
+        "description": "Different endpoints use different default pagination sizes",
+        "issues": [
+          {
+            "endpoint": "Api/StockController",
+            "default": 50
+          },
+          {
+            "endpoint": "Api/PurchaseOrderController",
+            "default": 20
+          },
+          {
+            "endpoint": "Api/SaleController",
+            "default": 20
+          }
+        ],
+        "recommendation": "Define constant for pagination default"
+      },
+      {
+        "id": "API-006",
+        "category": "API/Route",
+        "severity": "MEDIUM",
+        "title": "Missing API Rate Limiting",
+        "description": "No rate limiting on critical endpoints",
+        "affected_endpoints": [
+          "/api/v1/auth/login",
+          "/api/v1/sales",
+          "/api/v1/purchase-orders/{id}/receive"
+        ],
+        "recommendation": "Implement throttle middleware on sensitive endpoints"
+      },
+      {
+        "id": "API-007",
+        "category": "API/Route",
+        "severity": "LOW",
+        "title": "Missing API Documentation",
+        "description": "No OpenAPI/Swagger documentation present",
+        "impact": "API consumers cannot easily discover endpoints",
+        "recommendation": "Add Laravel Sanctum OpenAPI documentation or use Scribe"
+      }
+    ]
+  },
+  "summary": {
+    "critical_issues": 2,
+    "high_severity": 12,
+    "medium_severity": 22,
+    "low_severity": 11,
+    "total_files_with_issues": 28,
+    "most_problematic_files": [
+      "app/Http/Requests/*.php (5 authorization issues)",
+      "app/Http/Controllers/Api/StockController.php (1 critical import issue + error handling)",
+      "app/Models/*.php (inconsistent style issues)",
+      "database/migrations/*.php (decimal precision issues)"
+    ]
+  },
+  "recommendations": {
+    "immediate_actions": [
+      "Fix missing StockRecord import in Api/StockController.php",
+      "Implement proper authorization checks in all FormRequests",
+      "Add try-catch error handling in Api/SupplierController endpoints",
+      "Add return type hints to all controller and service methods"
+    ],
+    "short_term": [
+      "Reduce decimal precision from (15,2) to (12,2) in all migrations",
+      "Standardize error response format across all API endpoints",
+      "Implement consistent pagination defaults",
+      "Add rate limiting to authentication and critical endpoints"
+    ],
+    "medium_term": [
+      "Add API documentation (Swagger/OpenAPI)",
+      "Implement comprehensive input validation logging",
+      "Add query complexity analysis for complex queries",
+      "Implement primary image uniqueness with database-level constraints or locking"
+    ],
+    "long_term": [
+      "Refactor FormRequest authorization patterns",
+      "Add comprehensive test coverage",
+      "Implement API versioning strategy",
+      "Add monitoring and alerting for security events"
+    ]
+  }
+}

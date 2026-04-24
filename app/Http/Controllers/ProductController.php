@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\{Product, Category, VehicleType, ProductImage};
 use App\Http\Requests\ProductRequest;
+use App\Services\BarcodeService;
 use App\Services\SkuService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
@@ -62,7 +64,7 @@ class ProductController extends Controller
 
             return redirect()->route('products.index')->with('success', 'Produk berhasil ditambahkan.');
         } catch (\Exception $e) {
-            \Log::error('Product creation failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            Log::error('Product creation failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return redirect()->back()->withInput()->withErrors(['general' => 'Terjadi kesalahan saat menambahkan produk: ' . $e->getMessage()]);
         }
     }
@@ -84,30 +86,30 @@ class ProductController extends Controller
     public function update(ProductRequest $request, Product $product)
     {
         try {
-        DB::transaction(function () use ($request, $product) {
-            $data = Arr::except($request->validated(), ['compatibility', 'images']);
-            $slug = Str::slug($data['name']);
-            // Ensure slug is unique, ignoring current product
-            $exists = Product::where('slug', $slug)->where('id', '!=', $product->id)->exists();
-            $data['slug'] = $exists ? $slug . '-' . $product->id : $slug;
-            $data['is_active'] = $request->boolean('is_active');
-            $product->update($data);
+            DB::transaction(function () use ($request, $product) {
+                $data = Arr::except($request->validated(), ['compatibility', 'images']);
+                $slug = Str::slug($data['name']);
+                // Ensure slug is unique, ignoring current product
+                $exists = Product::where('slug', $slug)->where('id', '!=', $product->id)->exists();
+                $data['slug'] = $exists ? $slug . '-' . $product->id : $slug;
+                $data['is_active'] = $request->boolean('is_active');
+                $product->update($data);
 
-            if ($request->hasFile('images')) {
-                foreach ($request->file('images') as $i => $file) {
-                    $path = $file->store('products', 'public');
-                    ProductImage::create(['product_id' => $product->id, 'image_path' => $path, 'is_primary' => false, 'sort_order' => $product->images()->count() + $i]);
+                if ($request->hasFile('images')) {
+                    foreach ($request->file('images') as $i => $file) {
+                        $path = $file->store('products', 'public');
+                        ProductImage::create(['product_id' => $product->id, 'image_path' => $path, 'is_primary' => false, 'sort_order' => $product->images()->count() + $i]);
+                    }
                 }
-            }
 
-            if ($request->has('compatibility')) {
-                $product->compatibilities()->sync($request->compatibility ?? []);
-            }
-        });
+                if ($request->has('compatibility')) {
+                    $product->compatibilities()->sync($request->compatibility ?? []);
+                }
+            });
 
-        return redirect()->route('products.show', $product)->with('success', 'Produk berhasil diperbarui.');
+            return redirect()->route('products.show', $product)->with('success', 'Produk berhasil diperbarui.');
         } catch (\Exception $e) {
-            \Log::error('Product update failed', ['error' => $e->getMessage()]);
+            Log::error('Product update failed', ['error' => $e->getMessage()]);
             return redirect()->back()->withInput()->withErrors(['general' => 'Gagal menyimpan: ' . $e->getMessage()]);
         }
     }
@@ -123,5 +125,11 @@ class ProductController extends Controller
         Storage::disk('public')->delete($image->image_path);
         $image->delete();
         return back()->with('success', 'Foto dihapus.');
+    }
+
+    public function barcode(Product $product)
+    {
+        return response(BarcodeService::svg($product->sku))
+            ->header('Content-Type', 'image/svg+xml');
     }
 }

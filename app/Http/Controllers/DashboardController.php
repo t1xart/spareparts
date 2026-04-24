@@ -16,10 +16,17 @@ class DashboardController extends Controller
     {
         $stats = [
             'total_products' => Product::where('is_active', true)->count(),
-            'low_stock'      => Product::where('is_active', true)
-                ->where('min_stock', '>', 0)
-                ->whereHas('stockRecords', fn($q) => $q->whereColumn('quantity', '<=', DB::raw('products.min_stock')))
-                ->count(),
+            'low_stock'      => (int) DB::table(
+                    DB::table('products')
+                        ->select('products.id')
+                        ->leftJoin('stock_records', 'products.id', '=', 'stock_records.product_id')
+                        ->where('products.is_active', true)
+                        ->where('products.min_stock', '>', 0)
+                        ->whereNull('products.deleted_at')
+                        ->groupBy('products.id', 'products.min_stock')
+                        ->havingRaw('COALESCE(SUM(stock_records.quantity), 0) <= products.min_stock'),
+                    'sub'
+                )->count(),
             'sales_today'    => (float) Sale::whereDate('created_at', today())->where('status', 'paid')->sum('total'),
             'sales_month'    => (float) Sale::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->where('status', 'paid')->sum('total'),
             'sales_year'     => (float) Sale::whereYear('created_at', now()->year)->where('status', 'paid')->sum('total'),

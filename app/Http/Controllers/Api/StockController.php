@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\StockMutationResource;
 use App\Http\Requests\StockAdjustRequest;
-use App\Models\{Product, StockRecord, Warehouse};
+use App\Models\{Product, Warehouse};
 use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -75,24 +75,10 @@ class StockController extends Controller
                 }
 
                 if ($request->type === 'adjustment') {
-                    // Set absolute quantity
-                    $stock  = StockRecord::firstOrCreate(
-                        ['product_id' => $product->id, 'warehouse_id' => $warehouse->id],
-                        ['quantity' => 0]
-                    );
-                    $before = $stock->quantity;
-                    $stock->update(['quantity' => $quantity, 'last_updated' => now()]);
-
-                    \App\Models\StockMutation::create([
-                        'product_id'      => $product->id,
-                        'warehouse_id'    => $warehouse->id,
-                        'type'            => 'adjustment',
-                        'quantity'        => $quantity - $before,
-                        'quantity_before' => $before,
-                        'quantity_after'  => $quantity,
-                        'notes'           => $request->notes,
-                        'user_id'         => auth()->id(),
-                    ]);
+                    // Calculate delta from current stock to target absolute quantity
+                    $current = $this->stockService->getStockLevel($product, $warehouse);
+                    $delta   = $quantity - $current;
+                    $this->stockService->createMutation($product, $warehouse, 'adjustment', $delta, null, ['notes' => $request->notes]);
                     return;
                 }
 

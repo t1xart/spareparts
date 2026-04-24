@@ -22,5 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->renderable(function (\App\Exceptions\ApplicationException $e, $request) {
+            return $e->render($request);
+        });
     })->create();

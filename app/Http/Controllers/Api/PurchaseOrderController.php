@@ -66,35 +66,39 @@ class PurchaseOrderController extends Controller
             'items.*.received_quantity' => 'required|integer|min:0',
         ]);
 
-        DB::transaction(function () use ($request, $purchaseOrder) {
-            $warehouse   = Warehouse::where('branch_id', $purchaseOrder->branch_id)->firstOrFail();
-            $allReceived = true;
+        try {
+            DB::transaction(function () use ($request, $purchaseOrder) {
+                $warehouse   = Warehouse::where('branch_id', $purchaseOrder->branch_id)->firstOrFail();
+                $allReceived = true;
 
-            foreach ($request->items as $itemData) {
-                $item        = PurchaseOrderItem::findOrFail($itemData['id']);
-                $receivedQty = (int) $itemData['received_quantity'];
+                foreach ($request->items as $itemData) {
+                    $item        = PurchaseOrderItem::findOrFail($itemData['id']);
+                    $receivedQty = (int) $itemData['received_quantity'];
 
-                $item->update(['received_quantity' => $item->received_quantity + $receivedQty]);
-                if ($item->received_quantity < $item->quantity) $allReceived = false;
+                    $item->update(['received_quantity' => $item->received_quantity + $receivedQty]);
+                    if ($item->received_quantity < $item->quantity) $allReceived = false;
 
-                if ($receivedQty > 0) {
-                    $product = Product::findOrFail($item->product_id);
+                    if ($receivedQty > 0) {
+                        $product = Product::findOrFail($item->product_id);
 
-                    $this->stockService->createMutation(
-                        $product, $warehouse, 'in', $receivedQty, $purchaseOrder,
-                        ['notes' => "Penerimaan PO {$purchaseOrder->po_number}"]
-                    );
+                        $this->stockService->createMutation(
+                            $product, $warehouse, 'in', $receivedQty, $purchaseOrder,
+                            ['notes' => "Penerimaan PO {$purchaseOrder->po_number}"]
+                        );
 
-                    $product->update(['buy_price' => $item->buy_price]);
+                        $product->update(['buy_price' => $item->buy_price]);
+                    }
                 }
-            }
 
-            $purchaseOrder->update([
-                'status'      => $allReceived ? 'received' : 'partial',
-                'received_at' => now(),
-            ]);
-        });
+                $purchaseOrder->update([
+                    'status'      => $allReceived ? 'received' : 'partial',
+                    'received_at' => now(),
+                ]);
+            });
 
-        return new PurchaseOrderResource($purchaseOrder->fresh(['supplier', 'items.product']));
+            return new PurchaseOrderResource($purchaseOrder->fresh(['supplier', 'items.product']));
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Gagal mencatat penerimaan: ' . $e->getMessage()], 422);
+        }
     }
 }

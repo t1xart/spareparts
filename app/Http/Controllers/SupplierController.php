@@ -23,7 +23,7 @@ class SupplierController extends Controller
             'email' => 'nullable|email', 'address' => 'nullable|string', 'city' => 'nullable|string',
             'province' => 'nullable|string', 'bank_name' => 'nullable|string', 'bank_account' => 'nullable|string',
         ]);
-        $data['code'] = 'SUP-' . strtoupper(substr($request->name, 0, 3)) . '-' . str_pad(Supplier::count() + 1, 4, '0', STR_PAD_LEFT);
+        $data['code'] = Supplier::generateCode($request->name);
         Supplier::create($data);
         return redirect()->route('suppliers.index')->with('success', 'Supplier berhasil ditambahkan.');
     }

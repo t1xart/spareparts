@@ -21,7 +21,8 @@ class SkuService
         $yearMonth = now()->format('Ym');
         $base = "{$prefix}-{$yearMonth}-";
 
-        $last = Product::where('sku', 'like', "{$base}%")
+        $last = Product::withTrashed()
+            ->where('sku', 'like', "{$base}%")
             ->orderByDesc('sku')
             ->value('sku');
 

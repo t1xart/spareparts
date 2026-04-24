@@ -36,14 +36,14 @@ class SalesReportExport implements FromCollection, WithHeadings, WithMapping, Wi
             $sale->invoice_number,
             $sale->customer_name ?: 'Umum',
             $sale->customer_phone,
-            $sale->branch->name ?? '-',
+            $sale->branch?->name ?? '-',
             strtoupper($sale->payment_method),
             $sale->subtotal,
             $sale->discount,
             $sale->total,
             $sale->paid_amount,
             $sale->change_amount,
-            $sale->user->name ?? '-',
+            $sale->user?->name ?? '-',
             $sale->created_at->format('d/m/Y H:i'),
         ];
     }

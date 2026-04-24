@@ -67,9 +67,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     // Products
     Route::resource('products', ProductController::class);
     Route::delete('products/images/{image}', [ProductController::class, 'destroyImage'])->name('products.images.destroy');
-    Route::get('products/{product}/barcode', function (App\Models\Product $product) {
-        return response(\App\Services\BarcodeService::svg($product->sku))->header('Content-Type', 'image/svg+xml');
-    })->name('products.barcode');
+    Route::get('products/{product}/barcode', [ProductController::class, 'barcode'])->name('products.barcode');
 
     // Stock
     Route::get('stock', [StockController::class, 'index'])->name('stock.index');
@@ -79,11 +77,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     // Sales
     Route::get('sales/pos', [SaleController::class, 'pos'])->name('sales.pos');
     Route::post('sales/{sale}/return', [SaleController::class, 'returnSale'])->name('sales.return');
-    Route::get('sales/{sale}/invoice-pdf', function (App\Models\Sale $sale) {
-        $sale->load(['items.product', 'user', 'branch']);
-        $pdf = Barryvdh\DomPDF\Facade\Pdf::loadView('reports.pdf.invoice', compact('sale'));
-        return $pdf->stream("invoice-{$sale->invoice_number}.pdf");
-    })->name('sales.invoice.pdf');
+    Route::get('sales/{sale}/invoice-pdf', [SaleController::class, 'invoicePdf'])->name('sales.invoice.pdf');
     Route::resource('sales', SaleController::class)->only(['index', 'store', 'show']);
 
     // Purchase Orders

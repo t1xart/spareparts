@@ -33,9 +33,11 @@ class WorkOrderController extends Controller
             $warehouse = Warehouse::where('branch_id', auth()->user()->branch_id)->first();
 
             // Validate stock for product items before creating WO
+            $products = [];
             if ($warehouse) {
                 foreach ($items->filter(fn($i) => !empty($i['product_id'])) as $item) {
                     $product = Product::findOrFail($item['product_id']);
+                    $products[$item['product_id']] = $product;
                     if (!$this->stockService->hasSufficientStock($product, $warehouse, $item['quantity'])) {
                         $available = $this->stockService->getStockLevel($product, $warehouse);
                         throw new \Exception("Stok {$product->name} tidak cukup. Tersedia: {$available}, diminta: {$item['quantity']}");
@@ -69,7 +71,7 @@ class WorkOrderController extends Controller
                 ]);
 
                 if (!empty($item['product_id']) && $warehouse) {
-                    $product = Product::findOrFail($item['product_id']);
+                    $product = $products[$item['product_id']] ?? Product::findOrFail($item['product_id']);
                     $this->stockService->createMutation(
                         $product, $warehouse, 'out', -$item['quantity'], $wo,
                         ['notes' => "Work Order {$wo->wo_number}"]

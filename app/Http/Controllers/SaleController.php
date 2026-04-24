@@ -6,6 +6,7 @@ use App\Models\{Sale, SaleItem, Product, Warehouse};
 use App\Http\Requests\SaleRequest;
 use App\Services\InvoiceService;
 use App\Services\StockService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -46,8 +47,10 @@ class SaleController extends Controller
                 $warehouse = Warehouse::where('branch_id', auth()->user()->branch_id)->firstOrFail();
 
                 // Validate stock availability BEFORE creating the sale
+                $products = [];
                 foreach ($items as $item) {
                     $product = Product::findOrFail($item['product_id']);
+                    $products[$item['product_id']] = $product;
                     if (!$this->stockService->hasSufficientStock($product, $warehouse, $item['quantity'])) {
                         $currentStock = $this->stockService->getStockLevel($product, $warehouse);
                         throw new \Exception("Stok {$product->name} tidak cukup. Stok tersedia: {$currentStock}, diminta: {$item['quantity']}");
@@ -79,7 +82,7 @@ class SaleController extends Controller
 
                 // Create sale items and stock mutations
                 foreach ($items as $item) {
-                    $product = Product::findOrFail($item['product_id']);
+                    $product = $products[$item['product_id']];
                     $itemSubtotal = ($item['sell_price'] - ($item['discount'] ?? 0)) * $item['quantity'];
                     
                     SaleItem::create([
@@ -120,22 +123,19 @@ class SaleController extends Controller
         return view('sales.show', compact('sale'));
     }
 
-    public function returnSale(Sale $sale)
-    {
+    public function returnSale(Sale $sale)    {
         $this->authorize('processReturn', $sale);
         
         try {
             DB::transaction(function () use ($sale) {
                 $warehouse = Warehouse::where('branch_id', $sale->branch_id)->firstOrFail();
-                
+                $sale->load('items.product');
                 $sale->update(['status' => 'returned']);
                 
                 // Restore stock for all items
                 foreach ($sale->items as $item) {
-                    $product = Product::findOrFail($item->product_id);
-                    
                     $this->stockService->createMutation(
-                        $product,
+                        $item->product,
                         $warehouse,
                         'in',
                         $item->quantity,
@@ -149,5 +149,13 @@ class SaleController extends Controller
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Gagal memproses retur: ' . $e->getMessage()]);
         }
+    }
+
+    public function invoicePdf(Sale $sale)
+    {
+        $this->authorize('view', $sale);
+        $sale->load(['items.product', 'user', 'branch']);
+        $pdf = Pdf::loadView('reports.pdf.invoice', compact('sale'));
+        return $pdf->stream("invoice-{$sale->invoice_number}.pdf");
     }
 }

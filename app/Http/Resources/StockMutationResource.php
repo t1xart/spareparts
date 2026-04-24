@@ -10,14 +10,14 @@ class StockMutationResource extends JsonResource
     {
         return [
             'id'              => $this->id,
-            'product'         => ['id' => $this->product_id, 'name' => $this->product?->name, 'sku' => $this->product?->sku],
-            'warehouse'       => ['id' => $this->warehouse_id, 'name' => $this->warehouse?->name],
+            'product'         => $this->whenLoaded('product', fn() => ['id' => $this->product_id, 'name' => $this->product->name, 'sku' => $this->product->sku]),
+            'warehouse'       => $this->whenLoaded('warehouse', fn() => ['id' => $this->warehouse_id, 'name' => $this->warehouse->name]),
             'type'            => $this->type,
             'quantity'        => $this->quantity,
             'quantity_before' => $this->quantity_before,
             'quantity_after'  => $this->quantity_after,
             'notes'           => $this->notes,
-            'user'            => $this->user?->name,
+            'user'            => $this->whenLoaded('user', fn() => $this->user?->name),
             'created_at'      => $this->created_at?->toISOString(),
         ];
     }

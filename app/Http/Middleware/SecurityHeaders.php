@@ -34,8 +34,10 @@ class SecurityHeaders
             "frame-ancestors 'none';"
         );
 
-        // ── HSTS — paksa HTTPS (aktifkan di production) ──
-        // $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        // ── HSTS — paksa HTTPS (hanya di production) ──
+        if (app()->isProduction()) {
+            $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        }
 
         // ── Permissions Policy — batasi akses fitur browser ──
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
