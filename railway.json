@@ -1,5 +1,8 @@
 {
-  "builder": "nixpacks",
+  "builder": "railpack",
+  "build": {
+    "buildCommand": "install-php-extensions gd && composer install --optimize-autoloader --no-scripts --no-interaction && php artisan config:cache && php artisan route:cache && php artisan view:cache"
+  },
   "deploy": {
     "startCommand": "vendor/bin/heroku-php-apache2 public/ -C apache_app.conf",
     "restartPolicyType": "ON_FAILURE",
