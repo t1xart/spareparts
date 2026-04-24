@@ -1,0 +1,7 @@
+{
+  "builder": "nixpacks",
+  "nixpacks": {
+    "providers": ["php", "composer", "nodejs"],
+    "buildImage": "ubuntu:22.04"
+  }
+}
